@@ -26,7 +26,93 @@ export default function DisciplerDashboard() {
   const [invitePhase, setInvitePhase] = useState(1);
   const [invitations, setInvitations] = useState<any[]>([]);
   const [selectedDisciplee, setSelectedDisciplee] = useState<any>(null);
+  const [selectedDiscipleeDetail, setSelectedDiscipleeDetail] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [planTitle, setPlanTitle] = useState('');
+  const [planContent, setPlanContent] = useState('');
+  const [directMessage, setDirectMessage] = useState('');
   const router = useRouter();
+
+  const openDiscipleeDetail = async (disciplee: any) => {
+    setSelectedDisciplee(disciplee);
+    setSelectedDiscipleeDetail(null);
+    setDetailLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch(`/api/discipler/disciplee/${disciplee.id}`);
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Failed to load disciplee detail');
+        return;
+      }
+      setSelectedDiscipleeDetail(data);
+    } catch {
+      setError('Failed to load disciplee detail');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const createPlanForSelectedDisciplee = async () => {
+    if (!selectedDisciplee) return;
+    setError('');
+    setMessage('');
+
+    try {
+      const res = await fetch(`/api/discipler/disciplee/${selectedDisciplee.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'study-plan',
+          title: planTitle,
+          content: planContent,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Could not create plan');
+        return;
+      }
+
+      setPlanTitle('');
+      setPlanContent('');
+      setMessage('Personalized plan created.');
+      await openDiscipleeDetail(selectedDisciplee);
+    } catch {
+      setError('Could not create plan');
+    }
+  };
+
+  const sendDirectMessageToSelectedDisciplee = async () => {
+    if (!selectedDisciplee) return;
+    setError('');
+    setMessage('');
+
+    try {
+      const res = await fetch(`/api/discipler/disciplee/${selectedDisciplee.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'message',
+          content: directMessage,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Could not send message');
+        return;
+      }
+
+      setDirectMessage('');
+      setMessage('Message sent to disciplee.');
+      await openDiscipleeDetail(selectedDisciplee);
+    } catch {
+      setError('Could not send message');
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -264,7 +350,7 @@ export default function DisciplerDashboard() {
             {assignedDisciplees.map((disciplee) => (
               <button
                 key={disciplee.id}
-                onClick={() => setSelectedDisciplee(disciplee)}
+                onClick={() => openDiscipleeDetail(disciplee)}
                 className="rounded-lg border border-blue-100 bg-blue-50 p-4 hover:bg-blue-100 cursor-pointer transition text-left"
               >
                 <div className="flex items-center justify-between mb-2">
@@ -318,20 +404,109 @@ export default function DisciplerDashboard() {
                 <div>
                   <h3 className="text-lg font-semibold text-zinc-900">{selectedDisciplee.name}</h3>
                   <p className="text-sm text-zinc-700">{selectedDisciplee.email}</p>
-                  <p className="mt-2 text-sm text-zinc-700">
-                    Current phase: <span className="font-semibold">{selectedDisciplee.currentPhase || 0}</span>
-                  </p>
-                  <p className="text-xs text-zinc-600 mt-1">
-                    Discipler: {selectedDisciplee.discipler?.name || 'Unassigned'}
-                  </p>
                 </div>
                 <button
-                  onClick={() => setSelectedDisciplee(null)}
+                  onClick={() => {
+                    setSelectedDisciplee(null);
+                    setSelectedDiscipleeDetail(null);
+                    setPlanTitle('');
+                    setPlanContent('');
+                    setDirectMessage('');
+                  }}
                   className="rounded-lg border border-zinc-300 px-3 py-1 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
                 >
                   Close
                 </button>
               </div>
+
+              {detailLoading && <p className="mt-4 text-sm text-zinc-700">Loading disciplee details...</p>}
+
+              {selectedDiscipleeDetail && (
+                <div className="mt-4 grid gap-4 lg:grid-cols-3">
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                    <p className="text-xs uppercase font-semibold text-zinc-700">Current Phase</p>
+                    <p className="text-2xl font-bold text-zinc-900 mt-1">{selectedDiscipleeDetail.disciplee.currentPhase || 0}</p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                    <p className="text-xs uppercase font-semibold text-zinc-700">Progress</p>
+                    <p className="text-2xl font-bold text-zinc-900 mt-1">{selectedDiscipleeDetail.disciplee.progressPercentage || 0}%</p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                    <p className="text-xs uppercase font-semibold text-zinc-700">Completed Milestones</p>
+                    <p className="text-2xl font-bold text-zinc-900 mt-1">{JSON.parse(selectedDiscipleeDetail.disciplee.completedPhases || '[]').length}</p>
+                  </div>
+
+                  <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 lg:col-span-2">
+                    <h4 className="text-sm font-semibold text-zinc-900 mb-2">Personalize Study Plan</h4>
+                    <input
+                      value={planTitle}
+                      onChange={(e) => setPlanTitle(e.target.value)}
+                      placeholder="Plan title"
+                      className="mb-2 w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900"
+                    />
+                    <textarea
+                      value={planContent}
+                      onChange={(e) => setPlanContent(e.target.value)}
+                      placeholder="Plan details, goals, scriptures, and weekly actions..."
+                      className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 h-24"
+                    />
+                    <button
+                      onClick={createPlanForSelectedDisciplee}
+                      className="mt-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"
+                    >
+                      Save Plan
+                    </button>
+                  </div>
+
+                  <div className="rounded-xl border border-green-200 bg-green-50 p-4">
+                    <h4 className="text-sm font-semibold text-zinc-900 mb-2">Direct Message</h4>
+                    <textarea
+                      value={directMessage}
+                      onChange={(e) => setDirectMessage(e.target.value)}
+                      placeholder="Encouragement, coaching, reminders..."
+                      className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm text-zinc-900 h-24"
+                    />
+                    <button
+                      onClick={sendDirectMessageToSelectedDisciplee}
+                      className="mt-2 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700"
+                    >
+                      Send Message
+                    </button>
+                  </div>
+
+                  <div className="rounded-xl border border-zinc-200 bg-white p-4 lg:col-span-2">
+                    <h4 className="text-sm font-semibold text-zinc-900 mb-2">Recent Study Plans</h4>
+                    {(selectedDiscipleeDetail.studyPlans || []).length === 0 ? (
+                      <p className="text-sm text-zinc-700">No plans yet.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-auto">
+                        {selectedDiscipleeDetail.studyPlans.map((plan: any) => (
+                          <div key={plan.id} className="rounded-lg border border-zinc-200 p-3">
+                            <p className="text-sm font-semibold text-zinc-900">{plan.title}</p>
+                            <p className="text-xs text-zinc-700 mt-1 whitespace-pre-wrap">{plan.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="rounded-xl border border-zinc-200 bg-white p-4">
+                    <h4 className="text-sm font-semibold text-zinc-900 mb-2">Message History</h4>
+                    {(selectedDiscipleeDetail.messages || []).length === 0 ? (
+                      <p className="text-sm text-zinc-700">No messages yet.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-48 overflow-auto">
+                        {selectedDiscipleeDetail.messages.map((msg: any) => (
+                          <div key={msg.id} className="rounded-lg border border-zinc-200 p-2">
+                            <p className="text-xs text-zinc-900 whitespace-pre-wrap">{msg.content}</p>
+                            <p className="text-[11px] text-zinc-600 mt-1">{new Date(msg.createdAt).toLocaleString()}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -24,6 +24,8 @@ model User {
   invitationsSent       DiscipleshipInvitation[] @relation("DisciplerInvitations")
   invitationsAccepted   DiscipleshipInvitation[] @relation("AcceptedInvitations")
   messages              Message[]
+  sentDiscipleeMessages DiscipleeMessage[] @relation("DisciplerSentMessages")
+  receivedDiscipleeMessages DiscipleeMessage[] @relation("DiscipleeReceivedMessages")
   studyPlans            StudyPlan[]
   currentPhase          Int        @default(0) // 0=not started, 1-10 representing phase
   currentPhaseTrack     String?    // "male", "female", "leadership" for phase-specific tracks
@@ -36,6 +38,19 @@ model User {
   prayerResponses       PrayerResponse[]
   createdAt             DateTime   @default(now())
   updatedAt             DateTime   @updatedAt
+}
+
+model DiscipleeMessage {
+  id          String   @id @default(cuid())
+  disciplerId String
+  discipler   User     @relation("DisciplerSentMessages", fields: [disciplerId], references: [id], onDelete: Cascade)
+  discipleeId String
+  disciplee   User     @relation("DiscipleeReceivedMessages", fields: [discipleeId], references: [id], onDelete: Cascade)
+  content     String
+  createdAt   DateTime @default(now())
+
+  @@index([discipleeId, createdAt])
+  @@index([disciplerId, createdAt])
 }
 
 model Message {
