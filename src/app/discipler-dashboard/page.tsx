@@ -25,6 +25,7 @@ export default function DisciplerDashboard() {
   const [inviteMessage, setInviteMessage] = useState('');
   const [invitePhase, setInvitePhase] = useState(1);
   const [invitations, setInvitations] = useState<any[]>([]);
+  const [selectedDisciplee, setSelectedDisciplee] = useState<any>(null);
   const router = useRouter();
 
   const loadDashboardData = async () => {
@@ -263,7 +264,7 @@ export default function DisciplerDashboard() {
             {assignedDisciplees.map((disciplee) => (
               <button
                 key={disciplee.id}
-                onClick={() => router.push(`/discipler-dashboard/disciplee/${disciplee.id}`)}
+                onClick={() => setSelectedDisciplee(disciplee)}
                 className="rounded-lg border border-blue-100 bg-blue-50 p-4 hover:bg-blue-100 cursor-pointer transition text-left"
               >
                 <div className="flex items-center justify-between mb-2">
@@ -310,6 +311,29 @@ export default function DisciplerDashboard() {
               </button>
             ))}
           </div>
+
+          {selectedDisciplee && (
+            <div className="mt-6 rounded-2xl border border-blue-200 bg-white p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-zinc-900">{selectedDisciplee.name}</h3>
+                  <p className="text-sm text-zinc-700">{selectedDisciplee.email}</p>
+                  <p className="mt-2 text-sm text-zinc-700">
+                    Current phase: <span className="font-semibold">{selectedDisciplee.currentPhase || 0}</span>
+                  </p>
+                  <p className="text-xs text-zinc-600 mt-1">
+                    Discipler: {selectedDisciplee.discipler?.name || 'Unassigned'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedDisciplee(null)}
+                  className="rounded-lg border border-zinc-300 px-3 py-1 text-xs font-semibold text-zinc-700 hover:bg-zinc-50"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="rounded-3xl border border-blue-200 bg-white p-8 shadow-sm mb-8">
