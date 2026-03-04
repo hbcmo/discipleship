@@ -3,8 +3,8 @@ import { cookies } from 'next/headers';
 
 export async function GET(req: Request) {
   try {
-    const cookieStore = cookies();
-    const userId = (await cookieStore).get('userId')?.value;
+    const cookieStore = await cookies();
+    const userId = cookieStore.get('userId')?.value;
 
     if (!userId) {
       return Response.json({ error: 'Not authenticated' }, { status: 401 });
