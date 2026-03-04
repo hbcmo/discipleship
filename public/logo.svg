@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#1e40af" stroke="#1e3a8a" stroke-width="2"/>
+  
+  <!-- Decorative accent circles -->
+  <circle cx="100" cy="100" r="85" fill="none" stroke="#3b82f6" stroke-width="1" opacity="0.5"/>
+  
+  <!-- H letters in white -->
+  <!-- Left H -->
+  <g>
+    <!-- Left vertical bar -->
+    <rect x="45" y="60" width="8" height="80" fill="white"/>
+    <!-- Right vertical bar -->
+    <rect x="63" y="60" width="8" height="80" fill="white"/>
+    <!-- Horizontal connecting bar -->
+    <rect x="45" y="95" width="26" height="10" fill="white"/>
+  </g>
+  
+  <!-- Right H -->
+  <g>
+    <!-- Left vertical bar -->
+    <rect x="89" y="60" width="8" height="80" fill="white"/>
+    <!-- Right vertical bar -->
+    <rect x="107" y="60" width="8" height="80" fill="white"/>
+    <!-- Horizontal connecting bar -->
+    <rect x="89" y="95" width="26" height="10" fill="white"/>
+  </g>
+  
+  <!-- Text: Harmony Baptist Church -->
+  <text x="100" y="155" font-family="Arial, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="white">HARMONY BAPTIST</text>
+</svg>

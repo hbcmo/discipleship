@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String     @id @default(cuid())
+  email                 String     @unique
+  password              String
+  name                  String
+  role                  String     @default("disciplee")
+  gender                String?    // "male", "female", or null
+  disciplerId           String?
+  discipler             User?      @relation("DisciplerToDisciples", fields: [disciplerId], references: [id])
+  disciples             User[]     @relation("DisciplerToDisciples")
+  discipleshipRequests  DiscipleshipRequest[] @relation("DiscipleeRequests")
+  disciplerRequests     DiscipleshipRequest[] @relation("DisciplerRequests")
+  disciplerMeetings     Meeting[]  @relation("DisciplerMeetings")
+  discipleeMeetings     Meeting[]  @relation("DiscipleeMeetings")
+  invitationsSent       DiscipleshipInvitation[] @relation("DisciplerInvitations")
+  invitationsAccepted   DiscipleshipInvitation[] @relation("AcceptedInvitations")
+  messages              Message[]
+  studyPlans            StudyPlan[]
+  currentPhase          Int        @default(0) // 0=not started, 1-10 representing phase
+  currentPhaseTrack     String?    // "male", "female", "leadership" for phase-specific tracks
+  completedPhases       String     @default("[]") // JSON array of completed phase numbers
+  progressPercentage    Int        @default(0) // 0-100
+  phaseStartDate        DateTime? // When current phase began
+  estimatedPhaseEnd     DateTime? // When current phase expected to complete
+  userProgression       UserProgression[]
+  reflectionAnswers     ReflectionAnswer[]
+  prayerResponses       PrayerResponse[]
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StudyPlan {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CurriculumPhase {
+  id                String   @id @default(cuid())
+  phaseNumber       Int      @unique // 1-10
+  phaseName         String   // "Gospel Foundation", "Biblical Foundations", etc.
+  description       String?
+  durationWeeks     Int
+  targetAudience    String   // "all", "leaders", "men", "women"
+  orderInSequence   Int      @unique
+  objectives        String   // JSON array of core objectives
+  doctrinalFocus    String   // References to BFM, 2LC, HBC Covenant
+  weeklyContent     WeeklyContent[]
+  requirements      String   // JSON array of requirements
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model WeeklyContent {
+  id                String   @id @default(cuid())
+  phaseId           String
+  phase             CurriculumPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  weekNumber        Int      // 1-8 typically
+  title             String
+  scripturePassages String   // JSON array of scripture references
+  mainContent       String   // Main teaching content (Longtext)
+  reflectionQuestions ReflectionQuestion[]
+  spiritualPractice String
+  habitsToDevelop   String   // JSON array
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ReflectionQuestion {
+  id                String   @id @default(cuid())
+  weeklyContentId   String
+  weeklyContent     WeeklyContent @relation(fields: [weeklyContentId], references: [id], onDelete: Cascade)
+  questionNumber    Int
+  questionText      String
+  guidingNotes      String?
+  answers           ReflectionAnswer[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model ReflectionAnswer {
+  id                String   @id @default(cuid())
+  reflectionQuestionId String
+  reflectionQuestion ReflectionQuestion @relation(fields: [reflectionQuestionId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answerText        String   // User's response
+  submittedAt       DateTime @default(now())
+  disciplerComments String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model PrayerResponse {
+  id                String   @id @default(cuid())
+  weeklyContentId   String
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  prayerContent     String   // User's prayer response for the week
+  submittedAt       DateTime @default(now())
+  disciplerFeedback String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model UserProgression {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phaseNumber       Int
+  phaseName         String
+  status            String   @default("in-progress") // "not-started", "in-progress", "completed"
+  percentComplete   Int      @default(0) // 0-100
+  startDate         DateTime @default(now())
+  completionDate    DateTime?
+  notes             String?
+  disciplerComments String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model SpiritualHabit {
+  id                String   @id @default(cuid())
+  userId            String
+  name              String   // "Prayer", "Scripture Reading", "Reflection", etc.
+  goalPerWeek       Int      // Target number per week (e.g., 7 for daily)
+  completionThisWeek Int    @default(0)
+  totalCompleted    Int      @default(0)
+  weekStartDate     DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model DiscipleshipRequest {
+  id                String   @id @default(cuid())
+  discipleeId       String
+  disciplee         User     @relation("DiscipleeRequests", fields: [discipleeId], references: [id], onDelete: Cascade)
+  preferredGender   String?
+  notes             String?
+  status            String   @default("pending") // pending, approved, rejected
+  assignedDisciplerId String?
+  assignedDiscipler User?    @relation("DisciplerRequests", fields: [assignedDisciplerId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([discipleeId, status])
+}
+
+model Meeting {
+  id                String   @id @default(cuid())
+  title             String
+  disciplerId       String
+  discipler         User     @relation("DisciplerMeetings", fields: [disciplerId], references: [id], onDelete: Cascade)
+  discipleeId       String
+  disciplee         User     @relation("DiscipleeMeetings", fields: [discipleeId], references: [id], onDelete: Cascade)
+  scheduledFor      DateTime
+  location          String
+  notes             String?
+  status            String   @default("scheduled") // scheduled, completed, canceled
+  createdById       String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([disciplerId, scheduledFor])
+  @@index([discipleeId, scheduledFor])
+}
+
+model DiscipleshipInvitation {
+  id                String   @id @default(cuid())
+  disciplerId       String
+  discipler         User     @relation("DisciplerInvitations", fields: [disciplerId], references: [id], onDelete: Cascade)
+  inviteeEmail      String
+  message           String?
+  proposedPhase     Int      @default(1)
+  status            String   @default("pending") // pending, accepted, canceled
+  invitedUserId     String?
+  invitedUser       User?    @relation("AcceptedInvitations", fields: [invitedUserId], references: [id])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([disciplerId, status])
+  @@index([inviteeEmail, status])
+}
