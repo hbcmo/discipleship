@@ -73,7 +73,15 @@ export default function DiscipleeDetailPage() {
     },
   };
 
-  const disciplee = discipleeData[discipleeId];
+  const disciplee = discipleeData[discipleeId] || {
+    name: 'Disciplee',
+    email: 'Details unavailable in this view',
+    progress: '--',
+    focus: 'Use the dashboard actions to manage this disciplee.',
+    habits: [] as any[],
+    recentActivity: [] as any[],
+    messages: [] as any[],
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -84,8 +92,9 @@ export default function DiscipleeDetailPage() {
           return;
         }
         const userData = await res.json();
-        if (userData.role !== 'discipler') {
+        if (userData.role !== 'discipler' && userData.role !== 'admin') {
           router.push('/');
+          return;
         }
         setUser(userData);
       } catch (error) {
@@ -101,7 +110,7 @@ export default function DiscipleeDetailPage() {
     return <div className="flex min-h-screen items-center justify-center">Loading...</div>;
   }
 
-  if (!user || !disciplee) {
+  if (!user) {
     return null;
   }
 
