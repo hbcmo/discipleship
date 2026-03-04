@@ -7,6 +7,7 @@ import Link from 'next/link';
 export default function DiscipleeDetailPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
   const router = useRouter();
   const params = useParams();
   const discipleeId = params.id as string;
@@ -86,11 +87,18 @@ export default function DiscipleeDetailPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/auth/me');
-        if (!res.ok) {
+        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+
+        if (res.status === 401) {
           router.push('/auth/login');
           return;
         }
+
+        if (!res.ok) {
+          setAuthError('Unable to validate your session right now. Please refresh and try again.');
+          return;
+        }
+
         const userData = await res.json();
         if (userData.role !== 'discipler' && userData.role !== 'admin') {
           router.push('/');
@@ -98,7 +106,7 @@ export default function DiscipleeDetailPage() {
         }
         setUser(userData);
       } catch (error) {
-        router.push('/auth/login');
+        setAuthError('Unable to validate your session right now. Please refresh and try again.');
       } finally {
         setLoading(false);
       }
@@ -111,7 +119,13 @@ export default function DiscipleeDetailPage() {
   }
 
   if (!user) {
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center px-6">
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {authError || 'Unable to load this page.'}
+        </div>
+      </div>
+    );
   }
 
   return (
