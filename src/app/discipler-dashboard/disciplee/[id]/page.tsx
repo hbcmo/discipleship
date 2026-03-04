@@ -87,25 +87,37 @@ export default function DiscipleeDetailPage() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch('/api/auth/me', { cache: 'no-store' });
+        const res = await fetch('/api/auth/me', { 
+          cache: 'no-store',
+          credentials: 'include',
+        });
+
+        console.log('Auth check response:', res.status);
 
         if (res.status === 401) {
+          console.log('Redirecting to login - 401 status');
           router.push('/auth/login');
           return;
         }
 
         if (!res.ok) {
+          console.error('Auth check failed with status:', res.status);
           setAuthError('Unable to validate your session right now. Please refresh and try again.');
+          setLoading(false);
           return;
         }
 
         const userData = await res.json();
+        console.log('User data:', userData);
+        
         if (userData.role !== 'discipler' && userData.role !== 'admin') {
+          console.log('Redirecting home - insufficient role:', userData.role);
           router.push('/');
           return;
         }
         setUser(userData);
       } catch (error) {
+        console.error('Auth check error:', error);
         setAuthError('Unable to validate your session right now. Please refresh and try again.');
       } finally {
         setLoading(false);
